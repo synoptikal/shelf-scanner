@@ -97,6 +97,7 @@
       <input type="text" id="manual" inputmode="numeric" placeholder="Input available ISBN if no barcode exists">
       <button class="btn" onclick="manualGo()">Go</button>
     </div>
+    <button class="sellerbtn ghost" onclick="noCode()">No code printed</button>
     <div id="out"></div>
     <div class="row hidden" id="searchrow">
       <input type="text" id="search" placeholder="Type part of the title to find it manually…">
@@ -171,6 +172,16 @@ function onDecode(text) {
   stopScan();
   if (navigator.vibrate) navigator.vibrate(80);
   handleScan(text);
+}
+function noCode() {
+  stopScan();
+  currentIsbn = null;
+  lastHint = null;
+  $('out').innerHTML = '<div class="card" style="border-left-color:var(--plum-600)"><div class="meta">' +
+    'No code — find the book by title. Every button works the same; the registry gets a synthetic shelf id.</div></div>';
+  $('searchrow').classList.remove('hidden');
+  $('next').classList.remove('hidden');
+  setTimeout(function () { $('search').focus(); }, 50);
 }
 function manualGo() {
   var v = $('manual').value.trim();
@@ -312,6 +323,7 @@ function searchGo() {
   }).catch(fail);
 }
 function send(p) {
+  p.nocode = !currentIsbn;
   busy('Writing…');
   api('confirm', p).then(function (res) {
     $('out').innerHTML = '<div class="card"><span class="' + (res.ok ? 'ok' : 'err') + '">' + res.msg + '</span></div>';
@@ -367,7 +379,8 @@ function submitAdd() {
     author: $('add_author').value.trim(),
     series: $('add_series').value.trim() || '-',
     num: $('add_num').value.trim() || '-',
-    sellerCol: sel ? Number(sel.value) : 0
+    sellerCol: sel ? Number(sel.value) : 0,
+    nocode: !currentIsbn
   };
   if (!payload.title || !payload.author) {
     $('out').insertAdjacentHTML('afterbegin', '<div class="card"><span class="warn">Title and author are required.</span></div>');
