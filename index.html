@@ -223,7 +223,7 @@ function handleScan(v) {
   busy('Looking up ' + v + '…');
   api('scan', { isbn: v }).then(renderVerdict).catch(fail);
 }
-function sellerButtons(c) {
+function sellerButtons(c, registeredMap) {
   var h = '';
   var cJson = JSON.stringify(c).replace(/'/g, '&#39;');
   for (var i = 0; i < c.sellers.length; i++) {
@@ -238,6 +238,7 @@ function sellerButtons(c) {
     // Book List already says O somewhere — one button per owned shop, so
     // each copy gets its own SE Shelf line.
     for (var j = 0; j < owned.length; j++) {
+      if (registeredMap && registeredMap[owned[j].seller.trim().toLowerCase()]) continue;
       h += '<button class="sellerbtn ghost" ' +
         'onclick=\'pickRegisterOnly(' + cJson + ',' + JSON.stringify(owned[j].seller).replace(/'/g, '&#39;') + ')\'>' +
         'Shelve · ' + esc(owned[j].seller) + '</button>';
@@ -272,18 +273,25 @@ function renderVerdict(v) {
   currentIsbn = v.isbn13;
   if (v.kind === 'registered') {
     var b0 = v.copies[0];
+    var regMap = {};
+    v.copies.forEach(function (cp) { if (cp.bookshop) regMap[cp.bookshop.trim().toLowerCase()] = true; });
     var chips = v.copies.map(function (cp) {
       return '<span class="ownedchip">' + esc(cp.bookshop || '(no shop recorded)') + '</span>';
     }).join(' ');
     var h = '<div class="card"><h3>' + esc(b0.title) + '</h3><div class="meta">' +
       esc(b0.series && b0.series !== '-' ? b0.series + ' #' + b0.num : 'Standalone') +
-      ' — ' + esc(b0.author) + '<br>' + (v.copies.length > 1 ? v.copies.length + ' copies registered: ' : 'Registered: ') + chips + '</div>';
-    if (v.live) {
-      h += '<div class="meta"><span class="warn">Sheet still says ' + v.live.status + ' at ' + esc(v.live.seller) +
-        '.</span></div><button class="sellerbtn" onclick=\'pickLive(' + v.live.row + ',' + v.live.col + ',' +
-        JSON.stringify(b0.title).replace(/'/g, '&#39;') + ')\'>Mark Arrived now</button>';
+      ' — ' + esc(b0.author) + '<br>' +
+      (v.copies.length > 1 ? v.copies.length + ' copies registered: ' : 'Registered: ') + chips + '</div>';
+    if (v.book) {
+      var btns = sellerButtons(v.book, regMap);
+      var unregisteredOwned = (v.book.owned || []).some(function (o) { return !regMap[o.seller.trim().toLowerCase()]; });
+      if (v.book.sellers.length || unregisteredOwned || (!v.book.sellers.length && !(v.book.owned || []).length)) {
+        h += btns;
+      } else {
+        h += '<div class="meta"><span class="ok">✓ All copies accounted for — nothing to do.</span></div>';
+      }
     } else {
-      h += '<div class="meta"><span class="ok">✓ Already on the shelf — nothing to do.</span></div>';
+      h += '<div class="meta"><span class="ok">✓ Registered (no matching Book List row).</span></div>';
     }
     h += '</div>';
     $('out').innerHTML = h;
@@ -334,9 +342,6 @@ function send(p) {
 }
 function pick(row, col, c, seller) {
   send({ isbn13: currentIsbn, row: row, col: col, seller: seller, series: c.series, num: c.num, title: c.title, author: c.author, registerOnly: false });
-}
-function pickLive(row, col, title) {
-  send({ isbn13: currentIsbn, row: row, col: col, title: title, registerOnly: false });
 }
 function pickRegisterOnly(c, seller) {
   send({ isbn13: currentIsbn, row: null, col: null, seller: seller || null, series: c.series, num: c.num, title: c.title, author: c.author, registerOnly: true });
