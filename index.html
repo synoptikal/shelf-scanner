@@ -115,6 +115,7 @@ var scanner = null;
 var scanning = false;
 var currentIsbn = null;
 var allSellers = [];
+var lastHint = null;
 
 function $(id) { return document.getElementById(id); }
 function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
@@ -207,6 +208,7 @@ function addLog(html) {
 // ---------- flow ----------
 function handleScan(v) {
   currentIsbn = null;
+  lastHint = null;
   busy('Looking up ' + v + '…');
   api('scan', { isbn: v }).then(renderVerdict).catch(fail);
 }
@@ -281,6 +283,8 @@ function renderVerdict(v) {
       for (var j = 0; j < v.candidates.length; j++) h += candCard(v.candidates[j]);
     }
   }
+  lastHint = v.hint || null;
+  h += addAffordance();
   $('out').innerHTML = h;
   $('searchrow').classList.remove('hidden');
   if (!v.hint) { setTimeout(function () { $('search').focus(); }, 50); }
@@ -294,6 +298,7 @@ function searchGo() {
     var list = res.books || [];
     var h = list.length ? '' : '<div class="card"><span class="warn">No Book List match for “' + esc(q) + '”.</span></div>';
     for (var i = 0; i < list.length; i++) h += candCard(list[i]);
+    h += addAffordance();
     $('out').innerHTML = h;
     $('next').classList.remove('hidden');
   }).catch(fail);
@@ -315,6 +320,61 @@ function pickLive(row, col, title) {
 }
 function pickRegisterOnly(c) {
   send({ isbn13: currentIsbn, row: null, col: null, seller: null, series: c.series, num: c.num, title: c.title, author: c.author, registerOnly: true });
+}
+function addAffordance() {
+  return '<div class="card" style="border-left-color:var(--plum-600)">' +
+    '<div class="meta">Not on the list at all? Subscription boxes ship surprises.</div>' +
+    '<button class="sellerbtn ghost" onclick="showAddForm()">➕ Add to Book List</button></div>';
+}
+function toLastFirst(name) {
+  var n = String(name || '').trim();
+  if (!n || n.indexOf(',') !== -1) return n;
+  var parts = n.split(/\s+/);
+  if (parts.length < 2) return n;
+  var last = parts.pop();
+  return last + ', ' + parts.join(' ');
+}
+function showAddForm() {
+  var opts = '';
+  for (var k = 0; k < allSellers.length; k++) {
+    opts += '<option value="' + allSellers[k].col + '">' + esc(allSellers[k].seller) + '</option>';
+  }
+  var h = '<div class="card" style="border-left-color:var(--plum-600)">' +
+    '<h3>Add to Book List</h3>' +
+    '<div class="meta">Series and # are on the spine in your hand — that beats every database. Use "-" for standalones.</div>' +
+    '<div class="row"><input type="text" id="add_title" placeholder="Title" value="' + esc(lastHint && lastHint.title ? lastHint.title : '') + '"></div>' +
+    '<div class="row"><input type="text" id="add_author" placeholder="Author (Surname, First)" value="' + esc(lastHint && lastHint.author ? toLastFirst(lastHint.author) : '') + '"></div>' +
+    '<div class="row"><input type="text" id="add_series" placeholder="Series" value="-">' +
+    '<input type="text" id="add_num" placeholder="#" value="-" style="max-width:70px;flex:0 0 70px"></div>' +
+    '<div class="row"><select id="add_seller" class="mkselect">' + opts + '</select></div>' +
+    '<button class="sellerbtn" onclick="submitAdd()">Add &amp; mark Owned</button></div>';
+  $('out').innerHTML = h;
+  $('searchrow').classList.add('hidden');
+}
+function submitAdd() {
+  var sel = $('add_seller');
+  var payload = {
+    isbn13: currentIsbn,
+    title: $('add_title').value.trim(),
+    author: $('add_author').value.trim(),
+    series: $('add_series').value.trim() || '-',
+    num: $('add_num').value.trim() || '-',
+    sellerCol: sel ? Number(sel.value) : 0
+  };
+  if (!payload.title || !payload.author) {
+    $('out').insertAdjacentHTML('afterbegin', '<div class="card"><span class="warn">Title and author are required.</span></div>');
+    return;
+  }
+  busy('Adding to the Book List…');
+  api('add', payload).then(function (res) {
+    if (res.duplicate && res.existing) {
+      $('out').innerHTML = '<div class="card"><span class="warn">' + res.msg + '</span></div>' + candCard(res.existing);
+    } else {
+      $('out').innerHTML = '<div class="card"><span class="' + (res.ok ? 'ok' : 'err') + '">' + res.msg + '</span></div>';
+      if (res.ok) addLog(res.msg);
+    }
+    $('next').classList.remove('hidden');
+  }).catch(fail);
 }
 function pickMarkOwned(c) {
   var sel = document.getElementById('mkseller_' + c.row);
