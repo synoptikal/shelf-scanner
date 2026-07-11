@@ -224,12 +224,18 @@ function renderVerdict(v) {
   if (v.hint) {
     h += '<div class="card"><div class="meta">Lookup hint: <strong>' + esc(v.hint.title) + '</strong>' +
       (v.hint.author ? ' \u2014 ' + esc(v.hint.author) : '') + ' <span class="src">(' + esc(v.hint.source) + ')</span></div></div>';
+    for (var i = 0; i < v.candidates.length; i++) h += candCard(v.candidates[i]);
   } else {
-    h += '<div class="card"><div class="meta">No public data for this barcode \u2014 normal for subscription-box exclusives. Find it below.</div></div>';
+    h += '<div class="card"><div class="meta">No lookup data for this barcode \u2014 normal for subscription-box exclusives. ' +
+      'Type part of the title below to teach it once.</div></div>';
+    if (v.candidates.length) {
+      h += '<div class="hintline">Currently awaiting arrival \u2014 tap if it\u2019s one of these:</div>';
+      for (var j = 0; j < v.candidates.length; j++) h += candCard(v.candidates[j]);
+    }
   }
-  for (var i = 0; i < v.candidates.length; i++) h += candCard(v.candidates[i]);
   $('out').innerHTML = h;
   $('searchrow').classList.remove('hidden');
+  if (!v.hint) { setTimeout(function () { $('search').focus(); }, 50); }
 }
 function searchGo() {
   var q = $('search').value.trim();
