@@ -245,7 +245,7 @@ function sellerButtons(c, registeredMap) {
     }
   } else if (!c.sellers.length) {
     // Nothing marked at all: probably a forgotten mark. Offer the fix.
-    var opts = '';
+    var opts = '<option value="" selected>— Select seller —</option>';
     for (var k = 0; k < allSellers.length; k++) {
       opts += '<option value="' + allSellers[k].col + '">' + esc(allSellers[k].seller) + '</option>';
     }
@@ -360,7 +360,7 @@ function toLastFirst(name) {
   return last + ', ' + parts.join(' ');
 }
 function showAddForm() {
-  var opts = '';
+  var opts = '<option value="" selected>— Select seller —</option>';
   for (var k = 0; k < allSellers.length; k++) {
     opts += '<option value="' + allSellers[k].col + '">' + esc(allSellers[k].seller) + '</option>';
   }
@@ -391,6 +391,10 @@ function submitAdd() {
     $('out').insertAdjacentHTML('afterbegin', '<div class="card"><span class="warn">Title and author are required.</span></div>');
     return;
   }
+  if (!payload.sellerCol) {
+    $('out').insertAdjacentHTML('afterbegin', '<div class="card"><span class="warn">Please select a seller.</span></div>');
+    return;
+  }
   busy('Adding to the Book List…');
   api('add', payload).then(function (res) {
     if (res.duplicate && res.existing) {
@@ -406,6 +410,10 @@ function pickMarkOwned(c) {
   var sel = document.getElementById('mkseller_' + c.row);
   if (!sel) return;
   var col = Number(sel.value);
+  if (!col) {
+    $('out').insertAdjacentHTML('afterbegin', '<div class="card"><span class="warn">Please select a seller.</span></div>');
+    return;
+  }
   var seller = sel.options[sel.selectedIndex].text;
   send({ isbn13: currentIsbn, row: c.row, col: col, seller: seller, series: c.series, num: c.num, title: c.title, author: c.author, registerOnly: false, markOwned: true });
 }
