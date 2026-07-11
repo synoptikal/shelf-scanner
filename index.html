@@ -86,6 +86,7 @@ var CFG = { url: localStorage.getItem('shelf_endpoint') || '', token: localStora
 var scanner = null;
 var scanning = false;
 var currentIsbn = null;
+var allSellers = [];
 
 function $(id) { return document.getElementById(id); }
 function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
@@ -183,22 +184,41 @@ function handleScan(v) {
 }
 function sellerButtons(c) {
   var h = '';
+  var cJson = JSON.stringify(c).replace(/'/g, '&#39;');
   for (var i = 0; i < c.sellers.length; i++) {
     var s = c.sellers[i];
     h += '<button class="sellerbtn ' + (s.status === 'W' ? 'w' : '') + '" ' +
-      'onclick=\'pick(' + c.row + ',' + s.col + ',' + JSON.stringify(c).replace(/'/g, '&#39;') + ',' + JSON.stringify(s.seller).replace(/'/g, '&#39;') + ')\'>' +
+      'onclick=\'pick(' + c.row + ',' + s.col + ',' + cJson + ',' + JSON.stringify(s.seller).replace(/'/g, '&#39;') + ')\'>' +
       esc(s.seller) + ' (' + s.status + ') \u2192 Arrived</button>';
   }
-  h += '<button class="sellerbtn ghost" style="background:#e8eaed;color:#333" ' +
-    'onclick=\'pickRegisterOnly(' + JSON.stringify(c).replace(/'/g, '&#39;') + ')\'>Shelve only</button>';
+  var owned = c.owned || [];
+  if (owned.length) {
+    // Committee rule 2026-07-11: registry-only is offered ONLY when the
+    // Book List already says O somewhere.
+    h += '<button class="sellerbtn ghost" style="background:#e8eaed;color:#333" ' +
+      'onclick=\'pickRegisterOnly(' + cJson + ')\'>Shelve only</button>';
+  } else if (!c.sellers.length) {
+    // Nothing marked at all: probably a forgotten mark. Offer the fix.
+    var opts = '';
+    for (var k = 0; k < allSellers.length; k++) {
+      opts += '<option value="' + allSellers[k].col + '">' + esc(allSellers[k].seller) + '</option>';
+    }
+    h += '<div class="meta"><span class="warn">\u26a0 Not marked W/P/O on the Book List \u2014 forgot to mark it?</span></div>' +
+      '<div class="row"><select id="mkseller_' + c.row + '" style="flex:1;font-size:15px;padding:8px;border:1px solid #bbb;border-radius:8px">' + opts + '</select>' +
+      '<button class="sellerbtn" onclick=\'pickMarkOwned(' + cJson + ')\'>Mark Owned &amp; shelve</button></div>';
+  }
   return h;
 }
 function candCard(c) {
+  var ownedLine = (c.owned && c.owned.length)
+    ? '<br>Owned at: ' + c.owned.map(function (o) { return esc(o.seller); }).join(', ')
+    : '';
   return '<div class="card"><h3>' + esc(c.title) + '</h3><div class="meta">' +
     esc(c.series && c.series !== '-' ? c.series + ' #' + c.num : 'Standalone') + ' \u2014 ' + esc(c.author) +
-    '</div>' + sellerButtons(c) + '</div>';
+    ownedLine + '</div>' + sellerButtons(c) + '</div>';
 }
 function renderVerdict(v) {
+  if (v.allSellers) allSellers = v.allSellers;
   $('next').classList.remove('hidden');
   if (v.kind === 'invalid') {
     $('out').innerHTML = '<div class="card"><span class="warn">' + esc(v.msg) + '</span></div>';
@@ -241,7 +261,9 @@ function searchGo() {
   var q = $('search').value.trim();
   if (!q) return;
   busy('Searching \u201c' + q + '\u201d\u2026');
-  api('search', { query: q }).then(function (list) {
+  api('search', { query: q }).then(function (res) {
+    if (res.allSellers) allSellers = res.allSellers;
+    var list = res.books || [];
     var h = list.length ? '' : '<div class="card"><span class="warn">No Book List match for \u201c' + esc(q) + '\u201d.</span></div>';
     for (var i = 0; i < list.length; i++) h += candCard(list[i]);
     $('out').innerHTML = h;
@@ -265,6 +287,13 @@ function pickLive(row, col, title) {
 }
 function pickRegisterOnly(c) {
   send({ isbn13: currentIsbn, row: null, col: null, seller: null, series: c.series, num: c.num, title: c.title, author: c.author, registerOnly: true });
+}
+function pickMarkOwned(c) {
+  var sel = document.getElementById('mkseller_' + c.row);
+  if (!sel) return;
+  var col = Number(sel.value);
+  var seller = sel.options[sel.selectedIndex].text;
+  send({ isbn13: currentIsbn, row: c.row, col: col, seller: seller, series: c.series, num: c.num, title: c.title, author: c.author, registerOnly: false, markOwned: true });
 }
 
 boot();
