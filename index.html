@@ -64,7 +64,7 @@
   .sellerbtn.w{background:var(--amber-700)}
   .sellerbtn.ghost{background:var(--plum-100);color:var(--plum-700);border:1.5px solid var(--plum-600)}
   .ownedchip{display:inline-block;background:var(--plum-100);color:var(--plum-700);
-    border-radius:999px;padding:2px 9px;font-size:12px;margin-top:2px}
+    border-radius:999px;padding:2px 9px;font-size:12px;margin:2px 4px 0 0}
   .hintline{color:var(--muted);font-size:12px;margin:7px 2px}
   #log{margin-top:18px}
   #log .item{font-size:13px;padding:7px 4px 7px 10px;border-bottom:1px solid var(--line);
@@ -224,9 +224,13 @@ function sellerButtons(c) {
   var owned = c.owned || [];
   if (owned.length) {
     // Committee rule 2026-07-11: registry-only is offered ONLY when the
-    // Book List already says O somewhere.
-    h += '<button class="sellerbtn ghost" ' +
-      'onclick=\'pickRegisterOnly(' + cJson + ')\'>Shelve only</button>';
+    // Book List already says O somewhere — one button per owned shop, so
+    // each copy gets its own SE Shelf line.
+    for (var j = 0; j < owned.length; j++) {
+      h += '<button class="sellerbtn ghost" ' +
+        'onclick=\'pickRegisterOnly(' + cJson + ',' + JSON.stringify(owned[j].seller).replace(/'/g, '&#39;') + ')\'>' +
+        'Shelve · ' + esc(owned[j].seller) + '</button>';
+    }
   } else if (!c.sellers.length) {
     // Nothing marked at all: probably a forgotten mark. Offer the fix.
     var opts = '';
@@ -241,7 +245,7 @@ function sellerButtons(c) {
 }
 function candCard(c) {
   var ownedLine = (c.owned && c.owned.length)
-    ? '<br><span class="ownedchip">Owned at: ' + c.owned.map(function (o) { return esc(o.seller); }).join(', ') + '</span>'
+    ? '<br>' + c.owned.map(function (o) { return '<span class="ownedchip">Owned · ' + esc(o.seller) + '</span>'; }).join(' ')
     : '';
   return '<div class="card"><h3>' + esc(c.title) + '</h3><div class="meta">' +
     esc(c.series && c.series !== '-' ? c.series + ' #' + c.num : 'Standalone') + ' — ' + esc(c.author) +
@@ -256,13 +260,17 @@ function renderVerdict(v) {
   }
   currentIsbn = v.isbn13;
   if (v.kind === 'registered') {
-    var h = '<div class="card"><h3>' + esc(v.book.title) + '</h3><div class="meta">' +
-      esc(v.book.series && v.book.series !== '-' ? v.book.series + ' #' + v.book.num : 'Standalone') +
-      ' — ' + esc(v.book.author) + '<br>Registered: ' + esc(v.book.bookshop || '(no shop recorded)') + '</div>';
+    var b0 = v.copies[0];
+    var chips = v.copies.map(function (cp) {
+      return '<span class="ownedchip">' + esc(cp.bookshop || '(no shop recorded)') + '</span>';
+    }).join(' ');
+    var h = '<div class="card"><h3>' + esc(b0.title) + '</h3><div class="meta">' +
+      esc(b0.series && b0.series !== '-' ? b0.series + ' #' + b0.num : 'Standalone') +
+      ' — ' + esc(b0.author) + '<br>' + (v.copies.length > 1 ? v.copies.length + ' copies registered: ' : 'Registered: ') + chips + '</div>';
     if (v.live) {
       h += '<div class="meta"><span class="warn">Sheet still says ' + v.live.status + ' at ' + esc(v.live.seller) +
         '.</span></div><button class="sellerbtn" onclick=\'pickLive(' + v.live.row + ',' + v.live.col + ',' +
-        JSON.stringify(v.book.title).replace(/'/g, '&#39;') + ')\'>Mark Arrived now</button>';
+        JSON.stringify(b0.title).replace(/'/g, '&#39;') + ')\'>Mark Arrived now</button>';
     } else {
       h += '<div class="meta"><span class="ok">✓ Already on the shelf — nothing to do.</span></div>';
     }
@@ -318,8 +326,8 @@ function pick(row, col, c, seller) {
 function pickLive(row, col, title) {
   send({ isbn13: currentIsbn, row: row, col: col, title: title, registerOnly: false });
 }
-function pickRegisterOnly(c) {
-  send({ isbn13: currentIsbn, row: null, col: null, seller: null, series: c.series, num: c.num, title: c.title, author: c.author, registerOnly: true });
+function pickRegisterOnly(c, seller) {
+  send({ isbn13: currentIsbn, row: null, col: null, seller: seller || null, series: c.series, num: c.num, title: c.title, author: c.author, registerOnly: true });
 }
 function addAffordance() {
   return '<div class="card" style="border-left-color:var(--plum-600)">' +
