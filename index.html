@@ -18,30 +18,58 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-<meta name="theme-color" content="#1a73e8">
+<meta name="theme-color" content="#1b3a2a">
 <title>Shelf Scanner</title>
 <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <style>
-  body{font-family:Arial,Helvetica,sans-serif;font-size:15px;margin:0;background:#f6f7f9;color:#222}
-  header{background:#1a73e8;color:#fff;padding:12px 14px;font-size:17px;font-weight:bold;display:flex;justify-content:space-between;align-items:center}
-  header button{background:transparent;border:1px solid rgba(255,255,255,.6);color:#fff;border-radius:6px;padding:4px 10px;font-size:13px}
-  main{padding:12px;max-width:560px;margin:0 auto}
-  #reader{width:100%;border-radius:10px;overflow:hidden;background:#000;min-height:120px}
-  .row{display:flex;gap:8px;margin:10px 0}
-  input[type=text],input[type=password]{flex:1;box-sizing:border-box;font-size:16px;padding:10px;border:1px solid #bbb;border-radius:8px}
-  .btn{padding:10px 14px;font-size:15px;border:0;border-radius:8px;background:#1a73e8;color:#fff;cursor:pointer}
-  .btn.green{background:#1a7f37}.btn.amber{background:#9a6700}.btn.ghost{background:#e8eaed;color:#333}
-  .btn.big{width:100%;padding:12px;font-size:16px;margin-top:8px}
-  .card{background:#fff;border:1px solid #e0e0e0;border-radius:10px;padding:12px;margin:10px 0;box-shadow:0 1px 2px rgba(0,0,0,.05)}
-  .card h3{margin:0 0 4px;font-size:15px}
-  .meta{color:#555;font-size:13px;margin-bottom:8px}
-  .src{color:#999;font-size:12px}
-  .ok{color:#1a7f37}.warn{color:#b26a00}.err{color:#c5221f}
-  .sellerbtn{display:inline-block;margin:4px 6px 2px 0;padding:9px 12px;font-size:14px;border:0;border-radius:8px;background:#1a7f37;color:#fff}
-  .sellerbtn.w{background:#9a6700}
-  .hintline{color:#666;font-size:12px;margin:6px 2px}
-  #log .item{font-size:13px;padding:6px 2px;border-bottom:1px solid #eee}
-  footer{color:#999;font-size:12px;text-align:center;padding:14px}
+  :root{
+    --green-900:#1b3a2a; --green-700:#2d5a40; --green-600:#39704f; --green-100:#e7efe9;
+    --plum-900:#2e2044;  --plum-700:#4a3268;  --plum-600:#5d4383;  --plum-100:#ece7f3;
+    --amber-700:#6e5410; --amber-100:#f4ecd8;
+    --paper:#f6f4ee; --card:#fffdf8; --line:#e3e0d6;
+    --ink:#26281f; --muted:#6f7268; --err:#a63d3d;
+  }
+  *{-webkit-tap-highlight-color:transparent}
+  body{font-family:Arial,Helvetica,sans-serif;font-size:15px;margin:0;background:var(--paper);color:var(--ink)}
+  header{background:linear-gradient(135deg,var(--green-900),var(--green-700));color:#fff;
+    padding:14px 16px;display:flex;justify-content:space-between;align-items:center;
+    border-bottom:3px solid var(--plum-700)}
+  header span{font-family:Georgia,'Times New Roman',serif;font-size:19px;font-weight:bold;letter-spacing:.3px}
+  header button{background:transparent;border:1px solid rgba(255,255,255,.55);color:#fff;
+    border-radius:8px;padding:5px 12px;font-size:13px;cursor:pointer;transition:background .12s}
+  header button:active{background:rgba(255,255,255,.15)}
+  main{padding:14px;max-width:560px;margin:0 auto}
+  #reader{width:100%;border-radius:12px;overflow:hidden;background:#0d130f;min-height:120px;
+    border:2px solid var(--green-700);box-shadow:0 2px 10px rgba(27,58,42,.18)}
+  .row{display:flex;gap:8px;margin:12px 0}
+  input[type=text],input[type=password],.mkselect{flex:1;box-sizing:border-box;font-size:16px;
+    padding:11px;border:1.5px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink)}
+  input:focus,.mkselect:focus{outline:2px solid var(--plum-600);outline-offset:1px;border-color:var(--plum-600)}
+  .btn{padding:11px 15px;font-size:15px;border:0;border-radius:10px;background:var(--green-700);
+    color:#fff;cursor:pointer;transition:transform .08s,background .12s}
+  .btn:active{transform:scale(.97)}
+  .btn.big{width:100%;padding:13px;font-size:16px;margin-top:8px;background:var(--plum-700)}
+  .btn.big:active{background:var(--plum-900)}
+  .card{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--green-700);
+    border-radius:12px;padding:13px;margin:10px 0;box-shadow:0 1px 4px rgba(38,40,31,.06)}
+  .card h3{margin:0 0 4px;font-size:16px;font-family:Georgia,'Times New Roman',serif;color:var(--green-900)}
+  .meta{color:var(--muted);font-size:13px;margin-bottom:8px;line-height:1.5}
+  .src{color:#9a9d92;font-size:12px}
+  .ok{color:var(--green-700);font-weight:bold}
+  .warn{color:var(--amber-700)}
+  .err{color:var(--err)}
+  .sellerbtn{display:inline-block;margin:4px 6px 2px 0;padding:10px 13px;font-size:14px;border:0;
+    border-radius:10px;background:var(--green-700);color:#fff;cursor:pointer;transition:transform .08s}
+  .sellerbtn:active{transform:scale(.97)}
+  .sellerbtn.w{background:var(--amber-700)}
+  .sellerbtn.ghost{background:var(--plum-100);color:var(--plum-700);border:1.5px solid var(--plum-600)}
+  .ownedchip{display:inline-block;background:var(--plum-100);color:var(--plum-700);
+    border-radius:999px;padding:2px 9px;font-size:12px;margin-top:2px}
+  .hintline{color:var(--muted);font-size:12px;margin:7px 2px}
+  #log{margin-top:18px}
+  #log .item{font-size:13px;padding:7px 4px 7px 10px;border-bottom:1px solid var(--line);
+    border-left:3px solid var(--green-100)}
+  footer{color:#9a9d92;font-size:12px;text-align:center;padding:16px}
   .hidden{display:none}
 </style>
 </head>
@@ -66,12 +94,12 @@
     <div id="reader"></div>
     <div class="hintline">Point at the barcode on the back cover. EAN-13 only — that is every ISBN.</div>
     <div class="row">
-      <input type="text" id="manual" inputmode="numeric" placeholder="\u2026or type / wedge-scan an ISBN">
+      <input type="text" id="manual" inputmode="numeric" placeholder="Input available ISBN if no barcode exists">
       <button class="btn" onclick="manualGo()">Go</button>
     </div>
     <div id="out"></div>
     <div class="row hidden" id="searchrow">
-      <input type="text" id="search" placeholder="Type part of the title to find it manually\u2026">
+      <input type="text" id="search" placeholder="Type part of the title to find it manually…">
       <button class="btn" onclick="searchGo()">Find</button>
     </div>
     <button class="btn big hidden" id="next" onclick="resumeScan()">Scan next book</button>
@@ -79,7 +107,7 @@
   </div>
 
 </main>
-<footer>Add to Home screen for one-tap access \u00b7 writes go through the Book List lock</footer>
+<footer>Add to Home screen for one-tap access · writes go through the Book List lock</footer>
 
 <script>
 var CFG = { url: localStorage.getItem('shelf_endpoint') || '', token: localStorage.getItem('shelf_token') || '' };
@@ -179,7 +207,7 @@ function addLog(html) {
 // ---------- flow ----------
 function handleScan(v) {
   currentIsbn = null;
-  busy('Looking up ' + v + '\u2026');
+  busy('Looking up ' + v + '…');
   api('scan', { isbn: v }).then(renderVerdict).catch(fail);
 }
 function sellerButtons(c) {
@@ -189,13 +217,13 @@ function sellerButtons(c) {
     var s = c.sellers[i];
     h += '<button class="sellerbtn ' + (s.status === 'W' ? 'w' : '') + '" ' +
       'onclick=\'pick(' + c.row + ',' + s.col + ',' + cJson + ',' + JSON.stringify(s.seller).replace(/'/g, '&#39;') + ')\'>' +
-      esc(s.seller) + ' (' + s.status + ') \u2192 Arrived</button>';
+      esc(s.seller) + ' (' + s.status + ') → Arrived</button>';
   }
   var owned = c.owned || [];
   if (owned.length) {
     // Committee rule 2026-07-11: registry-only is offered ONLY when the
     // Book List already says O somewhere.
-    h += '<button class="sellerbtn ghost" style="background:#e8eaed;color:#333" ' +
+    h += '<button class="sellerbtn ghost" ' +
       'onclick=\'pickRegisterOnly(' + cJson + ')\'>Shelve only</button>';
   } else if (!c.sellers.length) {
     // Nothing marked at all: probably a forgotten mark. Offer the fix.
@@ -203,18 +231,18 @@ function sellerButtons(c) {
     for (var k = 0; k < allSellers.length; k++) {
       opts += '<option value="' + allSellers[k].col + '">' + esc(allSellers[k].seller) + '</option>';
     }
-    h += '<div class="meta"><span class="warn">\u26a0 Not marked W/P/O on the Book List \u2014 forgot to mark it?</span></div>' +
-      '<div class="row"><select id="mkseller_' + c.row + '" style="flex:1;font-size:15px;padding:8px;border:1px solid #bbb;border-radius:8px">' + opts + '</select>' +
+    h += '<div class="meta"><span class="warn">⚠ Not marked W/P/O on the Book List — forgot to mark it?</span></div>' +
+      '<div class="row"><select id="mkseller_' + c.row + '" class="mkselect">' + opts + '</select>' +
       '<button class="sellerbtn" onclick=\'pickMarkOwned(' + cJson + ')\'>Mark Owned &amp; shelve</button></div>';
   }
   return h;
 }
 function candCard(c) {
   var ownedLine = (c.owned && c.owned.length)
-    ? '<br>Owned at: ' + c.owned.map(function (o) { return esc(o.seller); }).join(', ')
+    ? '<br><span class="ownedchip">Owned at: ' + c.owned.map(function (o) { return esc(o.seller); }).join(', ') + '</span>'
     : '';
   return '<div class="card"><h3>' + esc(c.title) + '</h3><div class="meta">' +
-    esc(c.series && c.series !== '-' ? c.series + ' #' + c.num : 'Standalone') + ' \u2014 ' + esc(c.author) +
+    esc(c.series && c.series !== '-' ? c.series + ' #' + c.num : 'Standalone') + ' — ' + esc(c.author) +
     ownedLine + '</div>' + sellerButtons(c) + '</div>';
 }
 function renderVerdict(v) {
@@ -228,13 +256,13 @@ function renderVerdict(v) {
   if (v.kind === 'registered') {
     var h = '<div class="card"><h3>' + esc(v.book.title) + '</h3><div class="meta">' +
       esc(v.book.series && v.book.series !== '-' ? v.book.series + ' #' + v.book.num : 'Standalone') +
-      ' \u2014 ' + esc(v.book.author) + '<br>Registered: ' + esc(v.book.bookshop || '(no shop recorded)') + '</div>';
+      ' — ' + esc(v.book.author) + '<br>Registered: ' + esc(v.book.bookshop || '(no shop recorded)') + '</div>';
     if (v.live) {
       h += '<div class="meta"><span class="warn">Sheet still says ' + v.live.status + ' at ' + esc(v.live.seller) +
         '.</span></div><button class="sellerbtn" onclick=\'pickLive(' + v.live.row + ',' + v.live.col + ',' +
         JSON.stringify(v.book.title).replace(/'/g, '&#39;') + ')\'>Mark Arrived now</button>';
     } else {
-      h += '<div class="meta"><span class="ok">\u2713 Already on the shelf \u2014 nothing to do.</span></div>';
+      h += '<div class="meta"><span class="ok">✓ Already on the shelf — nothing to do.</span></div>';
     }
     h += '</div>';
     $('out').innerHTML = h;
@@ -243,13 +271,13 @@ function renderVerdict(v) {
   var h = '';
   if (v.hint) {
     h += '<div class="card"><div class="meta">Lookup hint: <strong>' + esc(v.hint.title) + '</strong>' +
-      (v.hint.author ? ' \u2014 ' + esc(v.hint.author) : '') + ' <span class="src">(' + esc(v.hint.source) + ')</span></div></div>';
+      (v.hint.author ? ' — ' + esc(v.hint.author) : '') + ' <span class="src">(' + esc(v.hint.source) + ')</span></div></div>';
     for (var i = 0; i < v.candidates.length; i++) h += candCard(v.candidates[i]);
   } else {
-    h += '<div class="card"><div class="meta">No lookup data for this barcode \u2014 normal for subscription-box exclusives. ' +
+    h += '<div class="card"><div class="meta">No lookup data for this barcode — normal for subscription-box exclusives. ' +
       'Type part of the title below to teach it once.</div></div>';
     if (v.candidates.length) {
-      h += '<div class="hintline">Currently awaiting arrival \u2014 tap if it\u2019s one of these:</div>';
+      h += '<div class="hintline">Currently awaiting arrival — tap if it’s one of these:</div>';
       for (var j = 0; j < v.candidates.length; j++) h += candCard(v.candidates[j]);
     }
   }
@@ -260,18 +288,18 @@ function renderVerdict(v) {
 function searchGo() {
   var q = $('search').value.trim();
   if (!q) return;
-  busy('Searching \u201c' + q + '\u201d\u2026');
+  busy('Searching “' + q + '”…');
   api('search', { query: q }).then(function (res) {
     if (res.allSellers) allSellers = res.allSellers;
     var list = res.books || [];
-    var h = list.length ? '' : '<div class="card"><span class="warn">No Book List match for \u201c' + esc(q) + '\u201d.</span></div>';
+    var h = list.length ? '' : '<div class="card"><span class="warn">No Book List match for “' + esc(q) + '”.</span></div>';
     for (var i = 0; i < list.length; i++) h += candCard(list[i]);
     $('out').innerHTML = h;
     $('next').classList.remove('hidden');
   }).catch(fail);
 }
 function send(p) {
-  busy('Writing\u2026');
+  busy('Writing…');
   api('confirm', p).then(function (res) {
     $('out').innerHTML = '<div class="card"><span class="' + (res.ok ? 'ok' : 'err') + '">' + res.msg + '</span></div>';
     addLog(res.msg);
