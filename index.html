@@ -228,9 +228,12 @@ function sellerButtons(c, registeredMap) {
   var cJson = JSON.stringify(c).replace(/'/g, '&#39;');
   for (var i = 0; i < c.sellers.length; i++) {
     var s = c.sellers[i];
+    // W/P were in transit, so they "Arrive". E/M/N were never purchased on the
+    // sheet, so they go straight to "Owned" — which is what holding the book means.
+    var verb = (s.status === 'W' || s.status === 'P') ? 'Arrived' : 'Owned';
     h += '<button class="sellerbtn ' + (s.status === 'W' ? 'w' : '') + '" ' +
       'onclick=\'pick(' + c.row + ',' + s.col + ',' + cJson + ',' + JSON.stringify(s.seller).replace(/'/g, '&#39;') + ')\'>' +
-      esc(s.seller) + ' (' + s.status + ') → Arrived</button>';
+      esc(s.seller) + ' (' + s.status + ') → ' + verb + '</button>';
   }
   var owned = c.owned || [];
   if (owned.length) {
@@ -249,7 +252,7 @@ function sellerButtons(c, registeredMap) {
     for (var k = 0; k < allSellers.length; k++) {
       opts += '<option value="' + allSellers[k].col + '">' + esc(allSellers[k].seller) + '</option>';
     }
-    h += '<div class="meta"><span class="warn">⚠ Not marked W/P/O on the Book List — forgot to mark it?</span></div>' +
+    h += '<div class="meta"><span class="warn">⚠ Not marked at any bookshop — forgot to mark it?</span></div>' +
       '<div class="row"><select id="mkseller_' + c.row + '" class="mkselect">' + opts + '</select>' +
       '<button class="sellerbtn" onclick=\'pickMarkOwned(' + cJson + ')\'>Mark Owned &amp; shelve</button></div>';
   }
