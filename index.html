@@ -247,15 +247,22 @@ function sellerButtons(c, registeredMap) {
         'Shelve · ' + esc(owned[j].seller) + '</button>';
     }
   } else if (!c.sellers.length) {
-    // Nothing marked at all: probably a forgotten mark. Offer the fix.
-    var opts = '<option value="" selected>— Select seller —</option>';
-    for (var k = 0; k < allSellers.length; k++) {
-      opts += '<option value="' + allSellers[k].col + '">' + esc(allSellers[k].seller) + '</option>';
-    }
-    h += '<div class="meta"><span class="warn">⚠ Not marked at any bookshop — forgot to mark it?</span></div>' +
-      '<div class="row"><select id="mkseller_' + c.row + '" class="mkselect">' + opts + '</select>' +
-      '<button class="sellerbtn" onclick=\'pickMarkOwned(' + cJson + ')\'>Mark Owned &amp; shelve</button></div>';
+    // Nothing marked at all: probably a forgotten mark.
+    h += '<div class="meta"><span class="warn">⚠ Not marked at any bookshop — forgot to mark it?</span></div>';
   }
+  // Seller choice on EVERY card (2026-09-14): the edition in hand decides the
+  // shop. A book the sheet only knows as Illumicrate (E) may be the Eternal
+  // Embers jacket — pick it here and that cell gets the O, whatever it held.
+  // Shops already O are shown but disabled. Server side, "chosen" accepts
+  // any cell except an existing O.
+  var opts = '<option value="" selected>— Select seller —</option>';
+  for (var k = 0; k < allSellers.length; k++) {
+    var already = owned.some(function (o) { return o.col === allSellers[k].col; });
+    opts += '<option value="' + allSellers[k].col + '"' + (already ? ' disabled' : '') + '>' +
+      esc(allSellers[k].seller) + (already ? ' (already O)' : '') + '</option>';
+  }
+  h += '<div class="row"><select id="mkseller_' + c.row + '" class="mkselect">' + opts + '</select>' +
+    '<button class="sellerbtn" onclick=\'pickMarkOwned(' + cJson + ')\'>Mark Owned &amp; shelve</button></div>';
   return h;
 }
 function candCard(c) {
@@ -417,8 +424,9 @@ function pickMarkOwned(c) {
     $('out').insertAdjacentHTML('afterbegin', '<div class="card"><span class="warn">Please select a seller.</span></div>');
     return;
   }
-  var seller = sel.options[sel.selectedIndex].text;
-  send({ isbn13: currentIsbn, row: c.row, col: col, seller: seller, series: c.series, num: c.num, title: c.title, author: c.author, registerOnly: false, markOwned: true });
+  var seller = sel.options[sel.selectedIndex].text.replace(/ \(already O\)$/, '');
+  // chosen: the server accepts any cell but an existing O (blank, W, P, E, M, N).
+  send({ isbn13: currentIsbn, row: c.row, col: col, seller: seller, series: c.series, num: c.num, title: c.title, author: c.author, registerOnly: false, chosen: true });
 }
 
 boot();
